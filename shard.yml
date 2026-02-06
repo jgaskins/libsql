@@ -1,0 +1,17 @@
+name: libsql
+version: 0.1.0
+
+authors:
+  - Jamie Gaskins <jgaskins@hey.com>
+
+dependencies:
+  db:
+    github: crystal-lang/crystal-db
+
+development_dependencies:
+  dotenv:
+    github: gdotdesign/cr-dotenv
+
+crystal: '>= 1.19.1'
+
+license: MIT
