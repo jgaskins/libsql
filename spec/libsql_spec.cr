@@ -8,17 +8,25 @@ describe LibSQL do
     db.query_one("SELECT 42", as: Int32).should eq 42
   end
 
-  it "can create a table" do
+  it "can create a table, insert a record, query the record, and drop the table" do
     table_name = "table_#{Random::Secure.hex}"
     db.exec <<-SQL
       CREATE TABLE #{table_name} (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
+        id UUID PRIMARY KEY,
+        email TEXT,
+        login_count INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT current_timestamp
       )
     SQL
 
-    db.exec "DROP TABLE #{table_name}"
+    begin
+      db.exec "INSERT INTO #{table_name} (id, email) VALUES (?, 'me@example.com')", UUID.v7
+      user = db.query_one("SELECT id, email, login_count, created_at FROM #{table_name} LIMIT 1", as: LibSQLSpec::User)
+      user.email.should eq "me@example.com"
+      user.created_at.should be_within 1.second, of: Time.utc
+    ensure
+      db.exec "DROP TABLE #{table_name}"
+    end
   end
 
   it "can query DB::Serializable objects" do
