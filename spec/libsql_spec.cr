@@ -8,6 +8,19 @@ describe LibSQL do
     db.query_one("SELECT 42", as: Int32).should eq 42
   end
 
+  it "can create a table" do
+    table_name = "table_#{Random::Secure.hex}"
+    db.exec <<-SQL
+      CREATE TABLE #{table_name} (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        created_at TIMESTAMP DEFAULT current_timestamp
+      )
+    SQL
+
+    db.exec "DROP TABLE #{table_name}"
+  end
+
   it "can query DB::Serializable objects" do
     id = UUID.v7
     email = "jamie@example.com"
