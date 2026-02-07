@@ -7,6 +7,9 @@ require "./pipeline_response"
 
 module LibSQL
   class Connection < ::DB::Connection
+    @baton : String? = nil
+    @in_transaction = false
+
     def initialize(options : ::DB::Connection::Options, uri : URI)
       super options
 
@@ -42,6 +45,7 @@ module LibSQL
       end
 
       pipeline = PipelineResponse.from_json(response.body)
+      @baton = pipeline.baton
       first_result = pipeline.results[0]
 
       if first_result.type.error?
@@ -54,7 +58,9 @@ module LibSQL
     private def build_pipeline_body(query : String, args : Enumerable) : String
       JSON.build do |json|
         json.object do
-          # json.field "baton", nil
+          if baton = @baton
+            json.field "baton", baton
+          end
           json.field "requests" do
             json.array do
               json.object do
@@ -72,8 +78,10 @@ module LibSQL
                   end
                 end
               end
-              json.object do
-                json.field "type", "close"
+              unless @in_transaction
+                json.object do
+                  json.field "type", "close"
+                end
               end
             end
           end
@@ -140,6 +148,23 @@ module LibSQL
         json.field "type", "text"
         json.field "value", value.to_s
       end
+    end
+
+    def perform_begin_transaction
+      @in_transaction = true
+      execute_sql("BEGIN", [] of String)
+    end
+
+    def perform_commit_transaction
+      execute_sql("COMMIT", [] of String)
+      @baton = nil
+      @in_transaction = false
+    end
+
+    def perform_rollback_transaction
+      execute_sql("ROLLBACK", [] of String)
+      @baton = nil
+      @in_transaction = false
     end
 
     protected def do_close

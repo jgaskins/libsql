@@ -48,6 +48,40 @@ describe LibSQL do
     user.created_at.should eq created_at
   end
 
+  it "can commit a transaction" do
+    table_name = "table_#{Random::Secure.hex}"
+    db.exec "CREATE TABLE #{table_name} (id INTEGER PRIMARY KEY, value TEXT)"
+
+    begin
+      db.transaction do |tx|
+        tx.connection.exec "INSERT INTO #{table_name} (id, value) VALUES (1, 'hello')"
+        tx.connection.exec "INSERT INTO #{table_name} (id, value) VALUES (2, 'world')"
+      end
+
+      results = db.query_all("SELECT value FROM #{table_name} ORDER BY id", as: String)
+      results.should eq ["hello", "world"]
+    ensure
+      db.exec "DROP TABLE #{table_name}"
+    end
+  end
+
+  it "can roll back a transaction" do
+    table_name = "table_#{Random::Secure.hex}"
+    db.exec "CREATE TABLE #{table_name} (id INTEGER PRIMARY KEY, value TEXT)"
+
+    begin
+      db.transaction do |tx|
+        tx.connection.exec "INSERT INTO #{table_name} (id, value) VALUES (1, 'should_not_persist')"
+        tx.rollback
+      end
+
+      results = db.query_all("SELECT value FROM #{table_name}", as: String)
+      results.should be_empty
+    ensure
+      db.exec "DROP TABLE #{table_name}"
+    end
+  end
+
   it "can handle empty result sets" do
     id = UUID.v7
     email = "jamie@example.com"
