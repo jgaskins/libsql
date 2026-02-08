@@ -56,9 +56,9 @@ module LibSQL
     end
 
     private def parse_time(str : String) : Time
-      Time.parse_rfc3339(str)
-    rescue Time::Format::Error
       Time.parse(str, "%F %T", Time::Location::UTC)
+    rescue Time::Format::Error
+      Time.parse_rfc3339(str)
     end
 
     private def decode_value(value : Field)
