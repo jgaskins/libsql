@@ -41,7 +41,7 @@ module LibSQL
       response = @http.post("/v3/pipeline", body: body)
 
       unless response.status.success?
-        raise DB::ConnectionRefused.new("HTTP #{response.status_code}: #{response.body}")
+        raise DB::ConnectionRefused.new("#{response.status_code}: #{response.body}")
       end
 
       pipeline = PipelineResponse.from_json(response.body)
