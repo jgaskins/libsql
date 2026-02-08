@@ -126,7 +126,7 @@ module LibSQL
         json.field "type", "blob"
         json.field "base64" do
           json.string do |io|
-            Base64.strict_encode io, value
+            Base64.strict_encode value, io
           end
         end
       end
