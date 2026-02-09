@@ -82,6 +82,17 @@ describe LibSQL do
     end
   end
 
+  it "can use Bool values as DB::Serializable properties" do
+    result = db.query_one(<<-SQL, as: LibSQLSpec::BoolRow)
+      SELECT
+        1 AS active,
+        0 AS deleted
+    SQL
+
+    result.active.should be_true
+    result.deleted.should be_false
+  end
+
   it "can handle empty result sets" do
     id = UUID.v7
     email = "jamie@example.com"
@@ -101,6 +112,13 @@ describe LibSQL do
 
     results.should be_empty
   end
+end
+
+struct LibSQLSpec::BoolRow
+  include DB::Serializable
+
+  getter active : Bool
+  getter deleted : Bool
 end
 
 struct LibSQLSpec::User

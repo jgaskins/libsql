@@ -39,6 +39,10 @@ module LibSQL
       decode_value(value)
     end
 
+    def read(t : Bool.class) : Bool
+      read(Int64) != 0
+    end
+
     def read(t : Int32.class) : Int32
       read(Int64).to_i32
     end
