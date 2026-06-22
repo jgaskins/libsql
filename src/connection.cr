@@ -13,12 +13,15 @@ module LibSQL
     def initialize(options : ::DB::Connection::Options, uri : URI)
       super options
 
+      params = HTTP::Params.parse(uri.query || "")
+      tls = params.fetch("tls", "true") != "false"
+
       host = uri.host || "localhost"
-      port = uri.port || 443
+      port = uri.port || (tls ? 443 : 80)
       if token = uri.password
         authorization = "Bearer #{token}"
       end
-      @http = HTTP::Client.new(host, port, tls: true)
+      @http = HTTP::Client.new(host, port, tls: tls)
       @http.before_request do |request|
         request.headers["Content-Type"] = "application/json"
         if authorization
