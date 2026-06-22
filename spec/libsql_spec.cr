@@ -152,6 +152,48 @@ describe LibSQL do
     result_nil.created_at.should be_nil
     result_nil.id.should be_nil
   end
+
+  it "can deserialize various integer and float sizes with DB::Serializable" do
+    result = db.query_one(<<-SQL, as: LibSQLSpec::AllTypesRow)
+      SELECT
+        127 AS i8,
+        32767 AS i16,
+        2147483647 AS i32,
+        9223372036854775807 AS i64,
+        255 AS u8,
+        65535 AS u16,
+        4294967295 AS u32,
+        9223372036854775807 AS u64,
+        3.14 AS f32,
+        3.141592653589793 AS f64
+    SQL
+
+    result.i8.should eq 127_i8
+    result.i16.should eq 32767_i16
+    result.i32.should eq 2147483647_i32
+    result.i64.should eq 9223372036854775807_i64
+    result.u8.should eq 255_u8
+    result.u16.should eq 65535_u16
+    result.u32.should eq 4294967295_u32
+    result.u64.should eq 9223372036854775807_u64
+    result.f32.should be_close(3.14_f32, 0.001)
+    result.f64.should eq 3.141592653589793_f64
+  end
+end
+
+struct LibSQLSpec::AllTypesRow
+  include DB::Serializable
+
+  getter i8 : Int8
+  getter i16 : Int16
+  getter i32 : Int32
+  getter i64 : Int64
+  getter u8 : UInt8
+  getter u16 : UInt16
+  getter u32 : UInt32
+  getter u64 : UInt64
+  getter f32 : Float32
+  getter f64 : Float64
 end
 
 struct LibSQLSpec::NilableRow
