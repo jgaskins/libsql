@@ -112,6 +112,56 @@ describe LibSQL do
 
     results.should be_empty
   end
+
+  it "can handle nilable/union types with DB::Serializable" do
+    id = UUID.v7
+    # Truncate time subseconds to match SQLite's precision in RFC3339 if needed,
+    # but let's just use a clean Time.utc
+    now = Time.utc
+    time = Time.utc(now.year, now.month, now.day, now.hour, now.minute, now.second)
+
+    # Test with non-nil values
+    result = db.query_one(<<-SQL, time, id, as: LibSQLSpec::NilableRow)
+      SELECT
+        1 AS active,
+        'test@example.com' AS email,
+        42 AS login_count,
+        ? AS created_at,
+        ? AS id
+    SQL
+
+    result.active.should be_true
+    result.email.should eq "test@example.com"
+    result.login_count.should eq 42
+    result.created_at.should eq time
+    result.id.should eq id
+
+    # Test with nil values
+    result_nil = db.query_one(<<-SQL, as: LibSQLSpec::NilableRow)
+      SELECT
+        NULL AS active,
+        NULL AS email,
+        NULL AS login_count,
+        NULL AS created_at,
+        NULL AS id
+    SQL
+
+    result_nil.active.should be_nil
+    result_nil.email.should be_nil
+    result_nil.login_count.should be_nil
+    result_nil.created_at.should be_nil
+    result_nil.id.should be_nil
+  end
+end
+
+struct LibSQLSpec::NilableRow
+  include DB::Serializable
+
+  getter active : Bool?
+  getter email : String?
+  getter login_count : Int32?
+  getter created_at : Time?
+  getter id : UUID?
 end
 
 struct LibSQLSpec::BoolRow
